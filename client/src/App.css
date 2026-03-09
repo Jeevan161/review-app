@@ -232,6 +232,80 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Robo
 .empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.3; }
 .empty-state p { font-size: 14px; }
 
+/* ─── Login Email ─── */
+.login-error { color: var(--red); font-size: 13px; margin-bottom: 12px; font-weight: 500; }
+.email-input-group { position: relative; }
+.existing-users { margin-top: 24px; }
+.divider-text { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; position: relative; }
+.divider-text::before, .divider-text::after { content: ''; position: absolute; top: 50%; width: 30%; height: 1px; background: var(--border); }
+.divider-text::before { left: 0; }
+.divider-text::after { right: 0; }
+.email-list { display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto; }
+.email-option { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); cursor: pointer; font-size: 13px; font-weight: 500; color: var(--text); transition: var(--transition); text-align: left; }
+.email-option:hover { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); }
+.email-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+.user-email { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ─── Edit Panel ─── */
+.edit-actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-start; }
+.btn-edit { padding: 6px 16px; border: 1.5px solid var(--primary); color: var(--primary); background: var(--primary-soft); border-radius: var(--radius-xs); font-size: 12px; font-weight: 600; cursor: pointer; transition: var(--transition); }
+.btn-edit:hover { background: var(--primary); color: #fff; }
+.btn-history { padding: 6px 16px; border: 1.5px solid var(--border); color: var(--text-secondary); background: var(--surface); border-radius: var(--radius-xs); font-size: 12px; font-weight: 600; cursor: pointer; transition: var(--transition); }
+.btn-history:hover { border-color: var(--text-muted); background: var(--bg); }
+
+.edit-panel { margin-top: 12px; padding: 16px; background: var(--bg); border-radius: var(--radius-sm); border: 1.5px solid var(--border); }
+.edit-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.edit-row:last-child { margin-bottom: 0; }
+.edit-row label { font-size: 12px; font-weight: 700; color: var(--text-secondary); min-width: 120px; text-transform: uppercase; letter-spacing: 0.3px; }
+.edit-row select { flex: 1; padding: 8px 12px; border: 1.5px solid var(--border); border-radius: var(--radius-xs); font-size: 13px; background: var(--surface); color: var(--text); cursor: pointer; transition: var(--transition); }
+.edit-row select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+.edit-buttons { display: flex; gap: 8px; margin-top: 14px; }
+.btn-save { padding: 8px 24px; background: var(--primary); color: #fff; border: none; border-radius: var(--radius-xs); font-size: 13px; font-weight: 600; cursor: pointer; transition: var(--transition); }
+.btn-save:hover { background: var(--primary-hover); }
+.btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-cancel { padding: 8px 20px; background: var(--surface); color: var(--text-secondary); border: 1.5px solid var(--border); border-radius: var(--radius-xs); font-size: 13px; font-weight: 600; cursor: pointer; transition: var(--transition); }
+.btn-cancel:hover { border-color: var(--red); color: var(--red); }
+
+/* ─── Change History ─── */
+.change-history { width: 100%; margin-top: 8px; }
+.history-entry { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--surface); border: 1px solid var(--border-light); border-radius: var(--radius-xs); margin-bottom: 4px; font-size: 12px; flex-wrap: wrap; }
+.history-field { font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.3px; min-width: 100px; }
+.history-change { color: var(--text); font-weight: 500; }
+.history-by { color: var(--teal); font-weight: 600; margin-left: auto; }
+.history-date { color: var(--text-muted); font-size: 11px; }
+.history-empty { font-size: 12px; color: var(--text-muted); padding: 8px 0; width: 100%; }
+
+/* ─── Review Page ─── */
+.review-header { margin-bottom: 20px; }
+.review-header h2 { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+.review-stats-row { display: flex; gap: 20px; }
+.review-stat { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+.review-stat-num { font-weight: 800; color: var(--primary); font-size: 16px; }
+.review-tabs { display: flex; gap: 4px; margin-bottom: 20px; background: var(--bg); padding: 4px; border-radius: var(--radius-sm); border: 1px solid var(--border-light); width: fit-content; }
+.review-tab { padding: 8px 20px; border: none; background: transparent; border-radius: var(--radius-xs); font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text-muted); transition: var(--transition); }
+.review-tab.active { background: var(--surface); color: var(--primary); box-shadow: var(--shadow-sm); }
+.review-tab:hover:not(.active) { color: var(--text); }
+
+.review-card { border-left: 3px solid var(--primary); }
+.review-matches { margin-top: 12px; }
+.review-matches-label { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 6px; }
+.match-more { font-size: 12px; color: var(--text-muted); padding: 6px 14px; font-style: italic; }
+
+.review-edit-section { margin-top: 14px; }
+.btn-edit-review { padding: 6px 16px; border: 1.5px dashed var(--border); color: var(--text-muted); background: transparent; border-radius: var(--radius-xs); font-size: 12px; font-weight: 600; cursor: pointer; transition: var(--transition); }
+.btn-edit-review:hover { border-color: var(--primary); color: var(--primary); border-style: solid; }
+
+.review-remark-section { margin-top: 12px; }
+.review-remark-input { width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; background: var(--surface); transition: var(--transition); }
+.review-remark-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+
+.review-actions { display: flex; gap: 10px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-light); }
+.btn-review-done { padding: 10px 28px; background: var(--green); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 700; cursor: pointer; transition: var(--transition); }
+.btn-review-done:hover { background: #15803d; transform: translateY(-1px); box-shadow: var(--shadow-md); }
+.btn-review-done:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.btn-review-skip { padding: 10px 24px; background: var(--surface); color: var(--text-muted); border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; cursor: pointer; transition: var(--transition); }
+.btn-review-skip:hover { border-color: var(--text-muted); color: var(--text-secondary); }
+
 /* ─── Responsive ─── */
 @media (max-width: 768px) {
   .navbar { padding: 0 16px; gap: 10px; }

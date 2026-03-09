@@ -2,6 +2,31 @@ import { useState, useEffect, useCallback } from "react";
 
 const API = "/api";
 
+const IS_COVERED_OPTIONS = {
+  COVERED: "Covered",
+  PARTIALLY_COVERED: "Partially Covered",
+  NOT_COVERED: "Not Covered",
+};
+
+const HOW_COVERED_OPTIONS = {
+  EXACT_MATCH: "Exact Match",
+  VARIANT: "Variant",
+  SYNTAX_COVERED: "Syntax Covered",
+  CONCEPT_COVERED: "Concept Covered",
+  NOT_APPLICABLE: "N/A",
+};
+
+const STATUS_OPTIONS = {
+  EXACT_MATCH: "Exact Match",
+  NAME_CHANGE_VARIANT: "Name Variant",
+  INPUT_CHANGED_VARIANT: "Input Variant",
+  SYNTAX_COVERED: "Syntax Covered",
+  PARTIALLY_COVERED: "Partially Covered",
+  CONCEPT_COVERED: "Concept Covered",
+  NOT_COVERED: "Not Covered",
+  OTHER_LANGUAGE: "Other Language",
+};
+
 const IS_COVERED_LABELS = {
   COVERED: "Covered",
   PARTIALLY_COVERED: "Partial",
@@ -68,7 +93,121 @@ function ExpandableSection({ label, count, children, defaultOpen = false }) {
   );
 }
 
-function QuestionCard({ q, name }) {
+function EditDropdowns({ question, email, onSave }) {
+  const a = question.gpt_analysis || {};
+  const [editing, setEditing] = useState(false);
+  const [isCovered, setIsCovered] = useState(a.is_covered || "");
+  const [howCovered, setHowCovered] = useState(a.how_covered || "");
+  const [coverageStatus, setCoverageStatus] = useState(a.coverage_status || "");
+  const [saving, setSaving] = useState(false);
+  const [history, setHistory] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
+
+  const loadHistory = async () => {
+    const res = await fetch(`${API}/questions/${question._id}/history`);
+    const data = await res.json();
+    setHistory(data);
+    setShowHistory(true);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    const res = await fetch(`${API}/questions/${question._id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fields: {
+          is_covered: isCovered,
+          how_covered: howCovered,
+          coverage_status: coverageStatus,
+        },
+        changed_by: email,
+      }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      onSave(data.question);
+      setEditing(false);
+    }
+    setSaving(false);
+  };
+
+  const handleCancel = () => {
+    setIsCovered(a.is_covered || "");
+    setHowCovered(a.how_covered || "");
+    setCoverageStatus(a.coverage_status || "");
+    setEditing(false);
+  };
+
+  if (!editing) {
+    return (
+      <div className="edit-actions">
+        <button className="btn-edit" onClick={() => setEditing(true)}>Edit</button>
+        <button className="btn-history" onClick={loadHistory}>
+          {showHistory ? "Hide History" : "History"}
+        </button>
+        {showHistory && history.length > 0 && (
+          <div className="change-history">
+            {history.map((h, i) => (
+              <div className="history-entry" key={i}>
+                <span className="history-field">{h.field}</span>
+                <span className="history-change">
+                  {h.old_value || "—"} → {h.new_value}
+                </span>
+                <span className="history-by">{h.changed_by}</span>
+                <span className="history-date">{new Date(h.changed_at).toLocaleString()}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {showHistory && history.length === 0 && (
+          <div className="history-empty">No changes recorded</div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="edit-panel">
+      <div className="edit-row">
+        <label>Is Covered</label>
+        <select value={isCovered} onChange={(e) => setIsCovered(e.target.value)}>
+          <option value="">Select...</option>
+          {Object.entries(IS_COVERED_OPTIONS).map(([k, v]) => (
+            <option key={k} value={k}>{v}</option>
+          ))}
+        </select>
+      </div>
+      <div className="edit-row">
+        <label>How Covered</label>
+        <select value={howCovered} onChange={(e) => setHowCovered(e.target.value)}>
+          <option value="">Select...</option>
+          {Object.entries(HOW_COVERED_OPTIONS).map(([k, v]) => (
+            <option key={k} value={k}>{v}</option>
+          ))}
+        </select>
+      </div>
+      <div className="edit-row">
+        <label>Coverage Status</label>
+        <select value={coverageStatus} onChange={(e) => setCoverageStatus(e.target.value)}>
+          <option value="">Select...</option>
+          {Object.entries(STATUS_OPTIONS).map(([k, v]) => (
+            <option key={k} value={k}>{v}</option>
+          ))}
+        </select>
+      </div>
+      <div className="edit-buttons">
+        <button className="btn-save" onClick={handleSave} disabled={saving}>
+          {saving ? "Saving..." : "Save"}
+        </button>
+        <button className="btn-cancel" onClick={handleCancel}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
+function QuestionCard({ q: initialQ, email }) {
+  const [q, setQ] = useState(initialQ);
   const [remarks, setRemarks] = useState([]);
   const [remarkText, setRemarkText] = useState("");
   const [loadedRemarks, setLoadedRemarks] = useState(false);
@@ -87,7 +226,7 @@ function QuestionCard({ q, name }) {
     await fetch(`${API}/questions/${q._id}/remarks`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, remark: remarkText.trim() }),
+      body: JSON.stringify({ name: email, remark: remarkText.trim() }),
     });
     setRemarkText("");
     loadRemarks();
@@ -152,6 +291,8 @@ function QuestionCard({ q, name }) {
         {a.justification && (
           <div className="q-justification">{a.justification}</div>
         )}
+
+        <EditDropdowns question={q} email={email} onSave={(updated) => setQ(updated)} />
 
         {a.matches?.length > 0 && (
           <ExpandableSection
@@ -220,7 +361,7 @@ function QuestionCard({ q, name }) {
   );
 }
 
-export default function QuestionsPage({ name }) {
+export default function QuestionsPage({ email }) {
   const [questions, setQuestions] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -396,7 +537,7 @@ export default function QuestionsPage({ name }) {
         <div className="active-filters">
           {filterCovered && (
             <span className="af-pill">
-              {IS_COVERED_LABELS[filterCovered]}
+              {IS_COVERED_LABELS[filterCovered] || filterCovered}
               <button onClick={() => { setFilterCovered(""); setPage(1); }}>&#10005;</button>
             </span>
           )}
@@ -441,7 +582,7 @@ export default function QuestionsPage({ name }) {
         </div>
       ) : (
         questions.map((q) => (
-          <QuestionCard key={q._id} q={q} name={name} />
+          <QuestionCard key={q._id} q={q} email={email} />
         ))
       )}
 

@@ -154,6 +154,135 @@ app.get("/api/remarks", async (req, res) => {
   res.json(remarks);
 });
 
+// ─── Reviewers ───
+app.get("/api/reviewers", async (req, res) => {
+  const reviewers = await db.collection("reviewers").find().sort({ email: 1 }).toArray();
+  res.json(reviewers);
+});
+
+app.post("/api/reviewers", async (req, res) => {
+  const { email } = req.body;
+  if (!email || !email.endsWith("@nxtwave.co.in"))
+    return res.status(400).json({ error: "Valid @nxtwave.co.in email required" });
+  const existing = await db.collection("reviewers").findOne({ email });
+  if (!existing) {
+    await db.collection("reviewers").insertOne({ email, created_at: new Date() });
+  }
+  res.json({ success: true, email });
+});
+
+// ─── Update question fields (with change tracking) ───
+app.put("/api/questions/:id", async (req, res) => {
+  const { fields, changed_by } = req.body;
+  if (!fields || !changed_by)
+    return res.status(400).json({ error: "fields and changed_by required" });
+
+  const question = await db.collection("questions").findOne({ _id: new ObjectId(req.params.id) });
+  if (!question) return res.status(404).json({ error: "Not found" });
+
+  const updates = {};
+  const historyEntries = [];
+
+  for (const [field, newValue] of Object.entries(fields)) {
+    const oldValue = question.gpt_analysis?.[field];
+    if (oldValue !== newValue) {
+      updates[`gpt_analysis.${field}`] = newValue;
+      historyEntries.push({
+        question_id: new ObjectId(req.params.id),
+        field,
+        old_value: oldValue || null,
+        new_value: newValue,
+        changed_by,
+        changed_at: new Date(),
+      });
+    }
+  }
+
+  if (Object.keys(updates).length > 0) {
+    await db.collection("questions").updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: updates }
+    );
+    if (historyEntries.length > 0) {
+      await db.collection("change_history").insertMany(historyEntries);
+    }
+  }
+
+  const updated = await db.collection("questions").findOne({ _id: new ObjectId(req.params.id) });
+  res.json({ success: true, question: updated });
+});
+
+// ─── Change history for a question ───
+app.get("/api/questions/:id/history", async (req, res) => {
+  const history = await db.collection("change_history")
+    .find({ question_id: new ObjectId(req.params.id) })
+    .sort({ changed_at: -1 })
+    .toArray();
+  res.json(history);
+});
+
+// ─── Review questions ───
+app.post("/api/questions/:id/review", async (req, res) => {
+  const { reviewer_email, status } = req.body;
+  if (!reviewer_email) return res.status(400).json({ error: "reviewer_email required" });
+
+  await db.collection("reviews").updateOne(
+    { question_id: new ObjectId(req.params.id), reviewer_email },
+    {
+      $set: {
+        question_id: new ObjectId(req.params.id),
+        reviewer_email,
+        status: status || "reviewed",
+        reviewed_at: new Date(),
+      },
+    },
+    { upsert: true }
+  );
+  res.json({ success: true });
+});
+
+// ─── Get review status for questions (by reviewer) ───
+app.get("/api/reviews", async (req, res) => {
+  const { reviewer_email } = req.query;
+  const filter = {};
+  if (reviewer_email) filter.reviewer_email = reviewer_email;
+  const reviews = await db.collection("reviews").find(filter).toArray();
+  res.json(reviews);
+});
+
+// ─── Get questions for review (pending for a reviewer) ───
+app.get("/api/review-questions", async (req, res) => {
+  const { reviewer_email, status: reviewStatus, page = 1, limit = 20 } = req.query;
+  const skip = (parseInt(page) - 1) * parseInt(limit);
+
+  let reviewedIds = [];
+  if (reviewer_email && reviewStatus === "pending") {
+    const reviewed = await db.collection("reviews")
+      .find({ reviewer_email, status: "reviewed" })
+      .toArray();
+    reviewedIds = reviewed.map((r) => r.question_id);
+  }
+
+  const filter = {};
+  if (reviewedIds.length > 0 && reviewStatus === "pending") {
+    filter._id = { $nin: reviewedIds };
+  } else if (reviewer_email && reviewStatus === "reviewed") {
+    const reviewed = await db.collection("reviews")
+      .find({ reviewer_email, status: "reviewed" })
+      .toArray();
+    const ids = reviewed.map((r) => r.question_id);
+    if (ids.length === 0) return res.json({ questions: [], total: 0, page: parseInt(page), limit: parseInt(limit) });
+    filter._id = { $in: ids };
+  }
+
+  const [questions, total] = await Promise.all([
+    db.collection("questions").find(filter).skip(skip).limit(parseInt(limit)).toArray(),
+    db.collection("questions").countDocuments(filter),
+  ]);
+
+  res.json({ questions, total, page: parseInt(page), limit: parseInt(limit) });
+});
+
 // Serve React client build
 app.use(express.static(path.join(__dirname, "../client/build")));
 app.get("*", (req, res) => {
