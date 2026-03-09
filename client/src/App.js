@@ -60,7 +60,6 @@ function App() {
   const handleSelectEmail = (em) => {
     Cookies.set("reviewer_email", em, { expires: 30 });
     setEmail(em);
-    setShowDropdown(false);
   };
 
   if (!email) {
