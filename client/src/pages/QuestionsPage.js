@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 
-const API = "http://localhost:4000/api";
+const API = "/api";
 
 const IS_COVERED_LABELS = {
   COVERED: "Covered",
