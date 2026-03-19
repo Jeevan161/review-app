@@ -159,6 +159,9 @@ app.get("/api/remarks", async (req, res) => {
         "question.gpt_analysis.is_covered": 1,
         "question.gpt_analysis.how_covered": 1,
         "question.gpt_analysis.language": 1,
+        "question.gpt_analysis.similarity_percentage": 1,
+        "question.gpt_analysis.justification": 1,
+        "question.gpt_analysis.matches": 1,
       },
     },
   ];

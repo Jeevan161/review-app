@@ -16,6 +16,13 @@ const HOW_COVERED_LABELS = {
   NOT_APPLICABLE: "N/A",
 };
 
+const HOW_COLORS = {
+  EXACT_MATCH: "how-exact",
+  VARIANT: "how-variant",
+  SYNTAX_COVERED: "how-syntax",
+  CONCEPT_COVERED: "how-concept",
+};
+
 const STATUS_LABELS = {
   EXACT_MATCH: "Exact Match",
   NAME_CHANGE_VARIANT: "Name Variant",
@@ -108,6 +115,36 @@ export default function RemarksPage() {
     return Array.from(names).sort();
   }, [allRemarks]);
 
+  const personCounts = useMemo(() => {
+    const counts = {};
+    allRemarks
+      .filter((r) => (!filterAction || r.action === filterAction) && (!filterSession || r.session === filterSession))
+      .forEach((r) => {
+        if (r.name) counts[r.name] = (counts[r.name] || 0) + 1;
+      });
+    return counts;
+  }, [allRemarks, filterAction, filterSession]);
+
+  const actionCounts = useMemo(() => {
+    const counts = {};
+    allRemarks
+      .filter((r) => (!filterPerson || r.name === filterPerson) && (!filterSession || r.session === filterSession))
+      .forEach((r) => {
+        if (r.action) counts[r.action] = (counts[r.action] || 0) + 1;
+      });
+    return counts;
+  }, [allRemarks, filterPerson, filterSession]);
+
+  const sessionCounts = useMemo(() => {
+    const counts = {};
+    allRemarks
+      .filter((r) => (!filterPerson || r.name === filterPerson) && (!filterAction || r.action === filterAction))
+      .forEach((r) => {
+        if (r.session) counts[r.session] = (counts[r.session] || 0) + 1;
+      });
+    return counts;
+  }, [allRemarks, filterPerson, filterAction]);
+
   const hasFilters = filterPerson || filterAction || filterSession;
 
   const clearFilters = () => {
@@ -132,7 +169,7 @@ export default function RemarksPage() {
           <select value={filterPerson} onChange={(e) => setFilterPerson(e.target.value)}>
             <option value="">All Persons</option>
             {uniquePersons.map((p) => (
-              <option key={p} value={p}>{p}</option>
+              <option key={p} value={p}>{p} ({personCounts[p] || 0})</option>
             ))}
           </select>
         </div>
@@ -141,7 +178,7 @@ export default function RemarksPage() {
           <select value={filterAction} onChange={(e) => setFilterAction(e.target.value)}>
             <option value="">All Actions</option>
             {ACTION_OPTIONS.map((a) => (
-              <option key={a} value={a}>{a}</option>
+              <option key={a} value={a}>{a} ({actionCounts[a] || 0})</option>
             ))}
           </select>
         </div>
@@ -150,7 +187,7 @@ export default function RemarksPage() {
           <select value={filterSession} onChange={(e) => setFilterSession(e.target.value)}>
             <option value="">All Sessions</option>
             {SESSION_OPTIONS.map((s) => (
-              <option key={s} value={s}>{s}</option>
+              <option key={s} value={s}>{s} ({sessionCounts[s] || 0})</option>
             ))}
           </select>
         </div>
@@ -168,59 +205,90 @@ export default function RemarksPage() {
         </div>
       ) : (
         remarks.map((r) => {
-          const isCov = r.question?.gpt_analysis?.is_covered;
-          const status = r.question?.gpt_analysis?.coverage_status;
-          const howCov = r.question?.gpt_analysis?.how_covered;
-          const lang = r.question?.gpt_analysis?.language;
+          const a = r.question?.gpt_analysis || {};
           const covClass =
-            isCov === "COVERED" ? "covered" :
-            isCov === "PARTIALLY_COVERED" ? "partial" : "notcov";
+            a.is_covered === "COVERED" ? "covered" :
+            a.is_covered === "PARTIALLY_COVERED" ? "partial" : "notcov";
           return (
-            <div className="remarks-page-card" key={r._id}>
-              <div className="rq-question-section">
-                <div className="rq-question-label">Question</div>
-                <div className="rq">{r.question?.Question || "Unknown question"}</div>
-                <div className="rq-meta">
+            <div className="question-card" key={r._id}>
+              <div className={`card-accent ${a.is_covered || ""}`} />
+              <div className="card-body">
+                <div className="q-header">
+                  <div className="q-text">{r.question?.Question || "Unknown question"}</div>
+                  <div className="q-badges">
+                    {a.is_covered && (
+                      <span className={`badge ${covClass}`}>
+                        {IS_COVERED_LABELS[a.is_covered] || a.is_covered}
+                      </span>
+                    )}
+                    {a.coverage_status && (
+                      <span className="badge status-detail">
+                        {STATUS_LABELS[a.coverage_status] || a.coverage_status}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="q-meta-row">
                   {r.question?.["Company Name"] && (
                     <span className="meta-pill company">{r.question["Company Name"]}</span>
                   )}
+                  {a.language && <span className="meta-pill lang">{a.language}</span>}
                   {r.question?.["Round Category"] && (
                     <span className="meta-pill round">{r.question["Round Category"]}</span>
                   )}
-                  {lang && (
-                    <span className="meta-pill lang">{lang}</span>
-                  )}
-                  {isCov && (
-                    <span className={`badge ${covClass}`}>
-                      {IS_COVERED_LABELS[isCov] || isCov}
+                  {a.how_covered && a.how_covered !== "NOT_APPLICABLE" && (
+                    <span className={`meta-pill how ${HOW_COLORS[a.how_covered] || ""}`}>
+                      {HOW_COVERED_LABELS[a.how_covered]}
                     </span>
                   )}
-                  {status && (
-                    <span className="badge status-detail">
-                      {STATUS_LABELS[status] || status}
-                    </span>
-                  )}
-                  {howCov && howCov !== "NOT_APPLICABLE" && (
-                    <span className="badge how-badge">
-                      {HOW_COVERED_LABELS[howCov] || howCov}
+                  {a.similarity_percentage != null && (
+                    <span className={`meta-pill sim ${a.similarity_percentage >= 80 ? "sim-high" : a.similarity_percentage >= 50 ? "sim-med" : "sim-low"}`}>
+                      {a.similarity_percentage}% match
                     </span>
                   )}
                 </div>
-              </div>
-              <div className="rq-remark">
-                <div className="remark-header">
-                  <span className="remark-author">{r.name}</span>
-                  <span className="remark-date">
-                    {new Date(r.created_at).toLocaleString()}
-                  </span>
-                  {r.action && (
-                    <span className="meta-pill remark-action-pill">{r.action}</span>
-                  )}
-                  {r.session && (
-                    <span className="meta-pill remark-session-pill">{r.session}</span>
-                  )}
+
+                {a.justification && (
+                  <div className="q-justification">{a.justification}</div>
+                )}
+
+                {a.matches?.length > 0 && (
+                  <div className="review-matches">
+                    <div className="review-matches-label">Course Matches ({a.matches.length})</div>
+                    <div className="match-list">
+                      {a.matches.slice(0, 3).map((m, i) => (
+                        <div className="match-row" key={i}>
+                          <span className={`match-type-badge ${m.match_type}`}>{m.match_type}</span>
+                          <a className="match-link" href={`https://learning.ccbp.in/question/${m.course_question_id}`} target="_blank" rel="noreferrer">
+                            {m.course_short_text}
+                          </a>
+                          <span className="match-pct">{m.similarity_percentage}%</span>
+                        </div>
+                      ))}
+                      {a.matches.length > 3 && (
+                        <div className="match-more">+{a.matches.length - 3} more matches</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Remark */}
+                <div className="rq-remark">
+                  <div className="remark-header">
+                    <span className="remark-author">{r.name}</span>
+                    <span className="remark-date">
+                      {new Date(r.created_at).toLocaleString()}
+                    </span>
+                    {r.action && (
+                      <span className="meta-pill remark-action-pill">{r.action}</span>
+                    )}
+                    {r.session && (
+                      <span className="meta-pill remark-session-pill">{r.session}</span>
+                    )}
+                  </div>
+                  <div className="remark-body">{r.remark}</div>
                 </div>
-                <div className="remark-body">{r.remark}</div>
               </div>
             </div>
           );

@@ -11,7 +11,7 @@ install-server:
 
 # Build client
 build:
-	cd client && npm run build
+	cd client && npm install && npm run build
 
 # Start both client and server
 start:
