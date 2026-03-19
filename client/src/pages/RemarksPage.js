@@ -8,6 +8,14 @@ const IS_COVERED_LABELS = {
   NOT_COVERED: "Not Covered",
 };
 
+const HOW_COVERED_LABELS = {
+  EXACT_MATCH: "Exact Match",
+  VARIANT: "Variant",
+  SYNTAX_COVERED: "Syntax Covered",
+  CONCEPT_COVERED: "Concept Covered",
+  NOT_APPLICABLE: "N/A",
+};
+
 const STATUS_LABELS = {
   EXACT_MATCH: "Exact Match",
   NAME_CHANGE_VARIANT: "Name Variant",
@@ -162,32 +170,42 @@ export default function RemarksPage() {
         remarks.map((r) => {
           const isCov = r.question?.gpt_analysis?.is_covered;
           const status = r.question?.gpt_analysis?.coverage_status;
+          const howCov = r.question?.gpt_analysis?.how_covered;
+          const lang = r.question?.gpt_analysis?.language;
           const covClass =
             isCov === "COVERED" ? "covered" :
             isCov === "PARTIALLY_COVERED" ? "partial" : "notcov";
           return (
             <div className="remarks-page-card" key={r._id}>
-              <div className="rq">{r.question?.Question || "Unknown question"}</div>
-              <div className="rq-meta">
-                {r.question?.["Company Name"] && (
-                  <span className="meta-pill company">{r.question["Company Name"]}</span>
-                )}
-                {isCov && (
-                  <span className={`badge ${covClass}`}>
-                    {IS_COVERED_LABELS[isCov] || isCov}
-                  </span>
-                )}
-                {status && (
-                  <span className="badge status-detail">
-                    {STATUS_LABELS[status] || status}
-                  </span>
-                )}
-                {r.action && (
-                  <span className="meta-pill remark-action-pill">{r.action}</span>
-                )}
-                {r.session && (
-                  <span className="meta-pill remark-session-pill">{r.session}</span>
-                )}
+              <div className="rq-question-section">
+                <div className="rq-question-label">Question</div>
+                <div className="rq">{r.question?.Question || "Unknown question"}</div>
+                <div className="rq-meta">
+                  {r.question?.["Company Name"] && (
+                    <span className="meta-pill company">{r.question["Company Name"]}</span>
+                  )}
+                  {r.question?.["Round Category"] && (
+                    <span className="meta-pill round">{r.question["Round Category"]}</span>
+                  )}
+                  {lang && (
+                    <span className="meta-pill lang">{lang}</span>
+                  )}
+                  {isCov && (
+                    <span className={`badge ${covClass}`}>
+                      {IS_COVERED_LABELS[isCov] || isCov}
+                    </span>
+                  )}
+                  {status && (
+                    <span className="badge status-detail">
+                      {STATUS_LABELS[status] || status}
+                    </span>
+                  )}
+                  {howCov && howCov !== "NOT_APPLICABLE" && (
+                    <span className="badge how-badge">
+                      {HOW_COVERED_LABELS[howCov] || howCov}
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="rq-remark">
                 <div className="remark-header">
@@ -195,6 +213,12 @@ export default function RemarksPage() {
                   <span className="remark-date">
                     {new Date(r.created_at).toLocaleString()}
                   </span>
+                  {r.action && (
+                    <span className="meta-pill remark-action-pill">{r.action}</span>
+                  )}
+                  {r.session && (
+                    <span className="meta-pill remark-session-pill">{r.session}</span>
+                  )}
                 </div>
                 <div className="remark-body">{r.remark}</div>
               </div>
